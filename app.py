@@ -79,8 +79,21 @@ def venues():
             "num_upcoming_shows": 0,
         }]
     }]
-    data = Venue.query.all()
-    print(data)
+    data = []
+    venues = Venue.query.group_by(Venue.id, Venue.state, Venue.city).all()
+
+    for venue in venues:
+        print(venue)
+        data.append({
+            "city": venue.city,
+            "state": venue.state,
+            "venues": [{
+                "id": venue.id,
+                "name": venue.name,
+                "num_upcoming_shows": 1
+            }]
+        })
+
     return render_template('pages/venues.html', areas=data)
 
 
@@ -89,13 +102,13 @@ def search_venues():
     # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
     # seach for Hop should return "The Musical Hop".
     # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
+
+    venues = Venue.query.filter(Venue.name.ilike(
+        '%' + request.form['search_term'] + '%'))
+
     response = {
-        "count": 1,
-        "data": [{
-            "id": 2,
-            "name": "The Dueling Pianos Bar",
-            "num_upcoming_shows": 0,
-        }]
+        "count": len(list(venues)),
+        "data": list(venues)
     }
     return render_template('pages/search_venues.html', results=response, search_term=request.form.get('search_term', ''))
 
@@ -199,9 +212,42 @@ def create_venue_form():
 def create_venue_submission():
     # TODO: insert form data as a new Venue record in the db, instead
     # TODO: modify data to be the data object returned from db insertion
+    try:
+        form = VenueForm()
+        name = form.name.data
+        genres = form.genres.data
+        city = form.city.data
+        state = form.state.data
+        address = form.address.data
+        phone = form.phone.data
+        website = form.website.data
+        image_link = form.image_link.data
+        facebook_link = form.facebook_link.data
+        seeking_talent = True if form.seeking_talent.data == 'Yes' else False
+        seeking_description = form.seeking_description.data
 
-    # on successful db insert, flash success
-    flash('Venue ' + request.form['name'] + ' was successfully listed!')
+        venue = Venue(name=name, genres=genres, city=city, state=state, address=address, phone=phone, website=website,
+                      image_link=image_link, facebook_link=facebook_link, seeking_talent=seeking_talent, seeking_description=seeking_description)
+        db.session.add(venue)
+        db.session.commit()
+        # on successful db insert, flash success
+        flash('Venue ' + request.form['name'] + ' was successfully listed!')
+
+    except ValidationError as e:
+        # catch validation error from phone, rollback changes
+
+        db.session.rollback()
+        flash('The phone number was invalid. Venue ' +
+              request.form['name'] + ' could not be added. ' + str(e))
+
+    except:
+        db.session.rollback()
+        flash('An error occurred. Venue ' +
+              request.form['name'] + ' could not be added. ' + str(e))
+
+    finally:
+        db.session.close()
+
     # TODO: on unsuccessful db insert, flash an error instead.
     # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
     # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
@@ -346,7 +392,7 @@ def edit_artist_submission(artist_id):
         artist.city = form.city.data
         artist.state = form.state.data
         artist.phone = form.phone.data
-        # check the phone number is valid
+        # check the phone number is a valid US number
         phone_validator(form.phone.data)
         artist.genres = form.genres.data
         artist.facebook_link = form.facebook_link.data
@@ -396,6 +442,7 @@ def edit_venue(venue_id):
         "seeking_description": "We are on the lookout for a local artist to play every two weeks. Please call us.",
         "image_link": "https://images.unsplash.com/photo-1543900694-133f37abaaa5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=400&q=60"
     }
+    venue = Venue.query.filter(id=venue_id).first()
     # TODO: populate form with values from venue with ID <venue_id>
     return render_template('forms/edit_venue.html', form=form, venue=venue)
 

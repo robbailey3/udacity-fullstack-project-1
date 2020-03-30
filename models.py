@@ -37,6 +37,7 @@ class Venue(db.Model):
     facebook_link = db.Column(db.String(120))
     seeking_talent = db.Column(db.Boolean)
     seeking_description = db.Column(db.String(255))
+    shows = db.relationship('Show', backref='Venue', lazy='dynamic')
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
     def getAll():
