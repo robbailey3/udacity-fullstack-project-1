@@ -41,7 +41,12 @@ block content %}
       commas', id='genres', autofocus = true) }}
     </div>
     <div class="form-group">
-      <label for="genres">Facebook Link</label>
+      <label for="image-url">Image URL</label>
+      {{ form.image_link(class_ = 'form-control', placeholder='http://',
+      id='image-url', autofocus = true) }}
+    </div>
+    <div class="form-group">
+      <label for="facebook">Facebook Link</label>
       {{ form.facebook_link(class_ = 'form-control', placeholder='http://',
       id='facebook', autofocus = true) }}
     </div>
