@@ -74,6 +74,7 @@ class Show(db.Model):
             'id': self.id,
             'venue_id': self.venue_id,
             'venue_name': self.Venue.name,
+            'venue_image_link': self.Venue.image_link,
             'artist_id': self.artist_id,
             'artist_name': self.Artist.name,
             'artist_image_link': self.Artist.image_link,
